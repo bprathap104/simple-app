@@ -1,0 +1,139 @@
+---
+- hosts: all
+  become: yes
+
+  vars:
+    project_name: myproject
+    project_dir: /home/backend/src
+    django_user: backend
+    django_group: backend
+
+  tasks:
+  - name: Create requirements.txt
+    template:
+      src: django/requirements.txt
+      dest: /home/backend/requirements.txt
+  - name: Install reqs into the specified (virtualenv), using Python
+    ansible.builtin.pip:
+      requirements: /home/backend/requirements.txt
+      virtualenv: /home/backend/env
+      virtualenv_command: virtualenv
+  - name: Create a folder for Django project
+    file:
+      path: /home/backend/myproject
+      state: directory
+      mode: '0755'
+      owner: backend
+      group: backend
+  - name: Create a folder for Django project
+    file:
+      path: /home/backend/myprojectdir/
+      state: directory
+      mode: '0755'
+      owner: backend
+      group: backend
+  - name: Create Gunicorn socket
+    template:
+      src: django/gunicorn.socket
+      dest: /etc/systemd/system/gunicorn.socket
+    notify:
+      - reload systemd
+  - name: Create Gunicorn systemd service
+    template:
+      src: django/gunicorn.systemd.j2
+      dest: /etc/systemd/system/gunicorn.service
+    notify:
+      - reload systemd
+  - name: Clenaup django
+    shell: "rm -rf /home/backend/myprojec*"
+    become: yes
+    become_user: backend
+  - name: Add File 'bin'
+    file:
+      path: "/home/backend/myprojectdir"
+      mode: '0750'
+      owner: backend
+      group: backend
+      state: directory
+  - name: Create Django startproject
+    command: "/home/backend/env/bin/django-admin startproject myproject /home/backend/myprojectdir"
+    environment:
+      VIRTUAL_ENV: "/home/backend/env"
+      PATH: "/home/backend/env/bin/:{{ ansible_env.PATH }}"
+    become: yes
+    become_user: backend
+  - name: Update settings.py
+    template:
+      src: django/settings.py.j2
+      dest: /home/backend/myprojectdir/myproject/settings.py
+    become: yes
+    become_user: backend
+  - name: Django makemigrations
+    command: "/home/backend/myprojectdir/manage.py makemigrations"
+    args:
+      chdir: /home/backend/myprojectdir
+    environment:
+      VIRTUAL_ENV: "/home/backend/env"
+      PATH: "/home/backend/env/bin/:{{ ansible_env.PATH }}"
+    become: yes
+    become_user: backend
+  - name: Django migrate
+    command: "/home/backend/myprojectdir/manage.py migrate"
+    args:
+      chdir: /home/backend/myprojectdir
+    environment:
+      VIRTUAL_ENV: "/home/backend/env"
+      PATH: "/home/backend/env/bin/:{{ ansible_env.PATH }}"
+    become: yes
+    become_user: backend
+  - name: Django superuser
+    command: "/home/backend/myprojectdir/manage.py createsuperuser"
+    args:
+      chdir: /home/backend/myprojectdir
+      stdin: |
+        admin
+        bprathap104@gmail.com
+        admin@123
+        admin@123
+    environment:
+      VIRTUAL_ENV: /home/backend/env
+      PATH: "/home/backend/env/bin/:{{ ansible_env.PATH }}"
+    become: yes
+    become_user: backend
+  - name: Django collect static
+    command: "/home/backend/myprojectdir/manage.py collectstatic"
+    args:
+      chdir: /home/backend/myprojectdir
+    environment:
+      VIRTUAL_ENV: "/home/backend/env"
+      PATH: "/home/backend/env/bin/:{{ ansible_env.PATH }}"
+    become: yes
+    become_user: backend
+  # - name: Deploy Django project with Gunicorn
+  #   become: yes
+  #   become_user: backend
+  #   vars:
+  #     django_project_dir: /home/backend/myprojectdir/
+  #     virtualenv_dir: /home/backend/env
+  #     django_project_name: "myproject"
+  #   environment:
+  #     VIRTUAL_ENV: "{{ virtualenv_dir }}"
+  #     PATH: "{{ virtualenv_dir }}/bin:{{ ansible_env.PATH }}"
+  #   command: >
+  #     {{ virtualenv_dir }}/bin/gunicorn
+  #     --bind 0.0.0.0:8000
+  #     --workers 4
+  #     --pythonpath {{ django_project_dir }}
+  #     {{ django_project_name }}.wsgi:application
+  #   args:
+  #     chdir: "{{ django_project_dir }}"
+  - name: Enable and start Gunicorn service
+    systemd:
+      name: gunicorn
+      enabled: yes
+      state: started
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+

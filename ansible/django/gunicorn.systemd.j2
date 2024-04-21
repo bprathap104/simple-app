@@ -1,0 +1,13 @@
+[Unit]
+Description=Gunicorn server for myproject
+
+[Service]
+User=backend
+Group=backend
+WorkingDirectory=/home/backend/myprojectdir/
+ExecStart=/home/backend/env/bin/gunicorn --bind 0.0.0.0:8000 --workers 4 --pythonpath /home/backend/myprojectdir/ myproject.wsgi:application
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+

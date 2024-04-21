@@ -1,0 +1,73 @@
+---
+- name: DevEnvironment
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install PostgreSQL
+      ansible.builtin.apt:
+        update_cache: "true"
+        state: present
+        name:
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+      tags: packages
+
+    - name: Ensure the PostgreSQL service is running
+      ansible.builtin.service:
+        name: postgresql
+        state: started
+        enabled: true
+        # TODO: This is likely due to a bug in Ansible.
+        # Remove this line in the future.
+        # See https://github.com/ansible/ansible/issues/75005
+        use: sysvinit
+
+    - name: Ensure database is created
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: myproject
+        encoding: UTF-8
+        lc_collate: en_US.UTF-8
+        lc_ctype: en_US.UTF-8
+        template: template0
+        state: present
+
+    - name: Ensure user has access to the database
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_user: db=myproject
+                      name=myprojectuser
+                      password=password
+                      encrypted=yes
+                      state=present
+
+    # If objs is omitted for type "database", it defaults to the database
+    # to which the connection is established
+    - name: Grant database privileges to the user.
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_privs:
+        db: myproject
+        privs: ALL
+        type: database
+        role: myprojectuser
+
+    - name: Grant schema public to the user.
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_privs:
+        db: myproject
+        privs: ALL
+        type: schema
+        objs: public
+        role: myprojectuser
+
+    - name: Ensure user does not have unnecessary privileges
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_user: name=myprojectuser
+                      role_attr_flags=NOSUPERUSER,NOCREATEDB
+                      state=present

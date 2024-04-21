@@ -1,4 +1,17 @@
-ansible-playbook -i "localhost," -c local -e user=frontend -v user.yaml
+===================
+apt-get install aws-cli
+apt-get update
+apt-get install awscli
+aws s3 cp s3://mybucket-10293847/best.zip .
+apt-get install zip
+unzip best.zip
+ansible-playbook -i "localhost," -c local -v db.yaml
+netstat -anltp
 ansible-playbook -i "localhost," -c local -e user=backend -v user.yaml
 ansible-playbook -i "localhost," -c local -v packages.yaml
+ansible-playbook -i "localhost," -c local -v backend.yaml
+ansible-playbook -i "localhost," -c local -e user=frontend -v user.yaml
 ansible-playbook -i "localhost," -c local -v frontend.yaml
+netstat -anltp
+
+
