@@ -19,7 +19,6 @@ Parameters:
     Type: String
     NoEcho: true
     Description: GitHub personal access token
-    Default: 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
 
 Resources:
   # IAM Role for CodeDeploy
