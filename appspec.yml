@@ -1,0 +1,15 @@
+version: 0.0
+os: linux
+files:
+  - source: ansible/frontend/src
+    destination: /home/frontend/src/
+    overwrite: true
+hooks:
+  ApplicationStart:
+    - location: scripts/start_frontend.sh
+      timeout: 300
+      runas: frontend
+  ApplicationStop:
+    - location: scripts/stop_frontend.sh
+      timeout: 300
+      runas: frontend
