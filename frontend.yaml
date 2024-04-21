@@ -1,0 +1,37 @@
+- name: DevEnvironment
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Copy website directory to destination
+      copy:
+        src: frontend/src/
+        dest: /home/frontend/src/
+        owner: frontend
+        group: frontend
+        mode: '0644'
+    - name: Copy frontend bash_profile
+      copy:
+        src: "user/frontend_bash_profile"
+        dest: "/home/frontend/.bash_profile"
+        mode: '0644'
+        owner: frontend
+        group: frontend
+    - name: Install "pm2" node.js package.
+      community.general.npm:
+        name: pm2
+        path: "/home/frontend/bin"
+      become: yes
+      become_user: 'frontend'
+
+    - name: Reload frontend service
+      shell: |
+        source ~/.bash_profile
+        pm2 start /home/frontend/src/server.js
+      become: yes
+      become_user: 'frontend'
+      args:
+        executable: /bin/bash
+    - name: Reload Nginx
+      shell: systemctl reload nginx
+      become: yes

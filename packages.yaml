@@ -1,0 +1,42 @@
+- name: DevEnvironment
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Install nginx node and npm
+      apt:
+        pkg:
+          - nginx
+          - nodejs
+          - npm
+          - python3
+          - python3-pip
+          - python3-dev
+          - build-essential
+          - libpq-dev
+        state: present
+    - name: Copy Nginx service file
+      copy:
+        src: "nginx/nginx.service"
+        dest: "/etc/systemd/system/nginx.service"
+        mode: '0644'
+    - name: frontend nginx Conf
+      copy:
+        src: "nginx/nginx-frontend.conf"
+        dest: "/etc/nginx/sites-enabled/frontend.conf"
+        mode: '0644'
+    - name: backend nginx Conf
+      copy:
+        src: "nginx/nginx-backend.conf"
+        dest: "/etc/nginx/sites-enabled/backend.conf"
+        mode: '0644'
+    - name: Reload Nginx
+      shell: systemctl reload nginx
+      become: yes
+      notify:
+        - reload systemd
+  handlers:
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+

@@ -1,0 +1,31 @@
+- name: DevEnvironment
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Add User "{{ user }}"
+      user:
+        name: "{{ user }}"
+        shell: /bin/bash
+        state: present
+    - name: Grant Permission
+      file:
+        path: "/home/{{ user }}/"
+        mode: '0750'
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        state: directory
+    - name: Add File 'src'
+      file:
+        path: "/home/{{ user }}/src"
+        mode: '0777'
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        state: directory
+    - name: Add File 'bin'
+      file:
+        path: "/home/{{ user }}/bin"
+        mode: '0777'
+        owner: "{{ user }}"
+        group: "{{ user }}"
+        state: directory

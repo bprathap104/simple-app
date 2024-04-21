@@ -1,0 +1,4 @@
+ansible-playbook -i "localhost," -c local -e user=frontend -v user.yaml
+ansible-playbook -i "localhost," -c local -e user=backend -v user.yaml
+ansible-playbook -i "localhost," -c local -v packages.yaml
+ansible-playbook -i "localhost," -c local -v frontend.yaml

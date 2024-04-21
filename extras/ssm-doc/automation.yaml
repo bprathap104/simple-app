@@ -1,0 +1,88 @@
+schemaVersion: '0.3'
+description: Test
+assumeRole: '{{ AutomationAssumeRole }}'
+parameters:
+  InstanceId:
+    type: StringList
+    description: (Required) The IDs of the Amazon Linux / Amazon Linux 2 EC2 instances to install ECS Agent.
+    allowedPattern: ^i-[0-9a-z-]*$
+  AutomationAssumeRole:
+    type: String
+    description: (Required) The ARN of the role that allows Automation to perform
+  InstallDependencies:
+    type: Boolean
+    description: (Required)
+    allowedValues:
+      - true
+      - false
+    default: false
+  # ExtraVariables:
+  #   type: String
+  #   description: (Optional) Additional variables for ansible
+  #   default: SSM=True
+  # PlaybookFile:
+  #   type: String
+  #   description: (Optional) The Playbook file to run (including relative path)
+  #   default: /opt/ansible_playbooks/install_packages.yml
+  # Verbose:
+  #   type: String
+  #   description: (Optional) Set the verbosity level for logging Playbook executions.
+  #   allowedValues:
+  #     - '-v'
+  #     - '-vv'
+  #     - '-vvv'
+  #     - '-vvvv'
+  #   default: '-v'
+mainSteps:
+  - name: CheckInstallDependencies
+    action: aws:branch
+    inputs:
+      Choices:
+        - NextStep: InstallDependency
+          Variable: '{{ InstallDependencies }}'
+          BooleanEquals: true
+      # Default: InvokeAnsibleCheck
+  - name: InstallDependency
+    action: aws:runCommand
+    # nextStep: InvokeAnsibleCheck
+#   isEnd: false
+    isEnd: true
+    inputs:
+      DocumentName: AWS-RunShellScript
+      InstanceIds:
+        - '{{ InstanceId }}'
+      Parameters:
+        commands:
+          - '#!/bin/sh'
+          - apt-get update
+          - DEBIAN_FRONTEND=noninteractive apt-get install python3-venv python3-pip git net-tools -y
+          - PIP_ROOT_USER_ACTION=ignore pip install --upgrade pip
+          - PIP_ROOT_USER_ACTION=ignore pip install ansible
+          # - cd /opt/; rm -rf ansible_playbooks
+          # - cd /opt; git clone https://github.com/bprathap104/ansible_playbooks.git
+          # - mkdir -p /opt/ansible/collections
+          # - ansible-galaxy collection install -r requirements.yml
+          # - ansible-galaxy collection install community.general -p /opt/ansible/collections
+  # - name: InvokeAnsibleCheck
+  #   action: aws:runCommand
+  #   nextStep: InvokeAnsible
+  #   isEnd: false
+  #   inputs:
+  #     DocumentName: AWS-RunShellScript
+  #     InstanceIds:
+  #       - '{{ InstanceId }}'
+  #     Parameters:
+  #       commands:
+  #         - '#!/bin/sh'
+  #         - ansible-playbook -i "localhost," --check -c local -e "{{ExtraVariables}}" "{{Verbose}}" "{{PlaybookFile}}"
+  # - name: InvokeAnsible
+  #   action: aws:runCommand
+  #   isEnd: true
+  #   inputs:
+  #     DocumentName: AWS-RunShellScript
+  #     InstanceIds:
+  #       - '{{ InstanceId }}'
+  #     Parameters:
+  #       commands:
+  #         - '#!/bin/sh'
+  #         - ansible-playbook -i "localhost," -c local -e "{{ExtraVariables}}" "{{Verbose}}" "{{PlaybookFile}}"
