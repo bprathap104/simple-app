@@ -6,7 +6,7 @@ files:
     overwrite: true
 file_exists_behavior: OVERWRITE
 hooks:
-  Install:
+  BeforeInstall:
     - location: scripts/start_frontend.sh
       timeout: 300
       runas: frontend
